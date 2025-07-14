@@ -1,109 +1,123 @@
-<script>
-  let Module, cars = [];
-  let wasmReady = false;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Traffic Flow Optimizer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* same CSS as before (omit here for brevity) */
+  </style>
+</head>
+<body>
+  <header>🚦 Smart Traffic Flow Optimizer</header>
+  <div class="controls">
+    <button id="startBtn">▶ Start Simulation</button>
+    <button id="stopBtn">⏹ Stop Simulation</button>
+    <button id="emergencyBtn">🚨 Emergency Override</button>
+  </div>
 
-  function log(message) {
-    const logDiv = document.getElementById("log");
-    const entry = document.createElement("div");
-    entry.className = "log-entry";
-    entry.textContent = `→ ${message}`;
-    logDiv.appendChild(entry);
-    logDiv.scrollTop = logDiv.scrollHeight;
-  }
+  <canvas id="trafficCanvas" width="800" height="300"></canvas>
+  <canvas id="waitChart" width="800" height="300"></canvas>
+  <div id="map" style="width:800px;height:400px"></div>
+  <div id="log"><div class="log-entry">📝 Simulation logs will appear here...</div></div>
 
-  // ✅ Load and wrap exported C++ functions
-  createModule().then(mod => {
-    Module = mod;
-    log("🚀 WebAssembly module loaded.");
+  <footer>Made by Yash Jain | Powered by C++ & WebAssembly</footer>
 
-    Module._startSimulation = Module.cwrap('startSimulation', 'void', []);
-    Module._stopSimulation = Module.cwrap('stopSimulation', 'void', []);
-    Module._emergencyOverride = Module.cwrap('emergencyOverride', 'void', []);
+  <script src="index.js"></script>
+  <script>
+    let Module, cars = [];
 
-    wasmReady = true;
-  });
+    createModule().then(mod => {
+      Module = mod;
+      log("🚀 WebAssembly module loaded.");
 
-  function startSimulation() {
-    if (wasmReady && Module._startSimulation) {
-      Module._startSimulation();
-      log("✅ Simulation started");
-      animateTraffic();
-      addCar(0, 40, "lime");
-      addCar(50, 100, "orange");
-    } else log("⚠️ startSimulation not found or WebAssembly not ready");
-  }
+      // ✅ Export functions from C++
+      Module._startSimulation = Module.cwrap("startSimulation", "void", []);
+      Module._stopSimulation = Module.cwrap("stopSimulation", "void", []);
+      Module._emergencyOverride = Module.cwrap("emergencyOverride", "void", []);
+      
+      // ✅ Enable buttons once ready
+      document.getElementById("startBtn").onclick = () => {
+        Module._startSimulation();
+        log("✅ Simulation started");
+        animateTraffic();
+        addCar(0, 40, "lime");
+        addCar(50, 100, "orange");
+      };
 
-  function stopSimulation() {
-    if (wasmReady && Module._stopSimulation) {
-      Module._stopSimulation();
-      log("🛑 Simulation stopped");
-    } else log("⚠️ stopSimulation not found or WebAssembly not ready");
-  }
+      document.getElementById("stopBtn").onclick = () => {
+        Module._stopSimulation();
+        log("🛑 Simulation stopped");
+      };
 
-  function emergencyOverride() {
-    if (wasmReady && Module._emergencyOverride) {
-      Module._emergencyOverride();
-      log("🚨 Emergency override triggered");
-    } else log("⚠️ emergencyOverride not found or WebAssembly not ready");
-  }
+      document.getElementById("emergencyBtn").onclick = () => {
+        Module._emergencyOverride();
+        log("🚨 Emergency override triggered");
+      };
+    });
 
-  function addCar(x, y, color) {
-    cars.push({ x, y, color });
-  }
-
-  function updateCarPositions() {
-    for (let car of cars) {
-      car.x += 2;
-      if (car.x > 800) car.x = -50;
+    function log(message) {
+      const logDiv = document.getElementById("log");
+      const entry = document.createElement("div");
+      entry.className = "log-entry";
+      entry.textContent = `→ ${message}`;
+      logDiv.appendChild(entry);
+      logDiv.scrollTop = logDiv.scrollHeight;
     }
-  }
 
-  function drawCars(ctx) {
-    ctx.clearRect(0, 0, 800, 300);
-    for (let car of cars) {
-      ctx.fillStyle = car.color;
-      ctx.fillRect(car.x, car.y, 40, 20);
+    function addCar(x, y, color) {
+      cars.push({ x, y, color });
     }
-  }
 
-  function animateTraffic() {
-    const canvas = document.getElementById("trafficCanvas");
-    const ctx = canvas.getContext("2d");
-    function loop() {
-      updateCarPositions();
-      drawCars(ctx);
-      requestAnimationFrame(loop);
+    function updateCarPositions() {
+      for (let car of cars) {
+        car.x += 2;
+        if (car.x > 800) car.x = -50;
+      }
     }
-    loop();
-  }
 
-  const waitChart = new Chart(document.getElementById('waitChart'), {
-    type: 'bar',
-    data: {
-      labels: [],
-      datasets: [{
-        label: 'Wait Time (s)',
-        data: [],
-        backgroundColor: '#00c6ff'
-      }]
-    },
-    options: {
-      scales: { y: { beginAtZero: true } }
+    function drawCars(ctx) {
+      ctx.clearRect(0, 0, 800, 300);
+      for (let car of cars) {
+        ctx.fillStyle = car.color;
+        ctx.fillRect(car.x, car.y, 40, 20);
+      }
     }
-  });
 
-  function updateWaitGraph(vehicleId, waitTime) {
-    waitChart.data.labels.push(`V${vehicleId}`);
-    waitChart.data.datasets[0].data.push(waitTime);
-    waitChart.update();
-  }
+    function animateTraffic() {
+      const canvas = document.getElementById("trafficCanvas");
+      const ctx = canvas.getContext("2d");
+      function loop() {
+        updateCarPositions();
+        drawCars(ctx);
+        requestAnimationFrame(loop);
+      }
+      loop();
+    }
 
-  const map = L.map('map').setView([28.6139, 77.2090], 13);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors'
-  }).addTo(map);
+    const waitChart = new Chart(document.getElementById('waitChart'), {
+      type: 'bar',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Wait Time (s)',
+          data: [],
+          backgroundColor: '#00c6ff'
+        }]
+      },
+      options: {
+        scales: { y: { beginAtZero: true } }
+      }
+    });
 
-  function addVehicleMarker(lat, lon, label = "Vehicle") {
-    L.marker([lat, lon]).addTo(map).bindPopup(label);
-  }
-</script>
+    const map = L.map('map').setView([28.6139, 77.2090], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+  </script>
+</body>
+</html>
