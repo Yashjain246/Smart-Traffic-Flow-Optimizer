@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Smart Traffic Flow Optimizer</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       margin: 0;
@@ -16,28 +19,21 @@
       align-items: center;
       min-height: 100vh;
     }
-
     header {
       width: 100%;
       text-align: center;
       padding: 3rem 1rem;
-      background-image: url('https://images.unsplash.com/photo-1581093588401-12f6d04015f3?auto=format&fit=crop&w=1500&q=80');
-      background-size: cover;
-      background-position: center;
-      color: white;
+      background: url('https://images.unsplash.com/photo-1581093588401-12f6d04015f3?auto=format&fit=crop&w=1500&q=80') center/cover;
       font-size: 2.5rem;
       font-weight: 700;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
       text-shadow: 1px 1px 4px #000;
     }
-
     .controls {
       margin: 2rem;
       display: flex;
       flex-wrap: wrap;
       gap: 1rem;
     }
-
     button {
       padding: 14px 28px;
       font-size: 1rem;
@@ -47,31 +43,30 @@
       background: linear-gradient(to right, #0072ff, #00c6ff);
       color: white;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: 0.3s;
     }
-
     button:hover {
       transform: scale(1.05);
       box-shadow: 0 8px 16px rgba(0, 198, 255, 0.4);
     }
-
+    canvas, #map {
+      margin-top: 2rem;
+      border: 2px solid #00c6ff;
+      border-radius: 10px;
+    }
     #log {
       width: 90%;
       max-width: 800px;
-      height: 300px;
+      height: 200px;
       background: rgba(255,255,255,0.1);
       border: 1px solid #00c6ff;
       border-radius: 12px;
       padding: 1rem;
       font-family: monospace;
       overflow-y: auto;
-      margin-bottom: 3rem;
+      margin-top: 2rem;
     }
-
-    .log-entry {
-      margin-bottom: 0.5rem;
-    }
-
+    .log-entry { margin-bottom: 0.5rem; }
     footer {
       padding: 1rem;
       font-size: 0.9rem;
@@ -80,37 +75,29 @@
   </style>
 </head>
 <body>
-
-  <header>
-    🚦 Smart Traffic Flow Optimizer
-  </header>
-
+  <header>🚦 Smart Traffic Flow Optimizer</header>
   <div class="controls">
     <button onclick="startSimulation()">▶ Start Simulation</button>
     <button onclick="stopSimulation()">⏹ Stop Simulation</button>
     <button onclick="emergencyOverride()">🚨 Emergency Override</button>
   </div>
 
-  <div id="log">
-    <div class="log-entry">📝 Simulation logs will appear here...</div>
-  </div>
+  <canvas id="trafficCanvas" width="800" height="300"></canvas>
+  <canvas id="waitChart" width="800" height="300"></canvas>
+  <div id="map" style="width:800px;height:400px"></div>
+  <div id="log"><div class="log-entry">📝 Simulation logs will appear here...</div></div>
 
-  <footer>
-    Made by Yash Jain | Powered by C++ & WebAssembly
-  </footer>
+  <footer>Made by Yash Jain | Powered by C++ & WebAssembly</footer>
 
-  <!-- Load compiled WASM + JS -->
   <script src="index.js"></script>
   <script>
-    let Module;
+    let Module, cars = [];
 
-    // Load WASM module
     createModule().then(mod => {
       Module = mod;
       log("🚀 WebAssembly module loaded.");
     });
 
-    // Log function
     function log(message) {
       const logDiv = document.getElementById("log");
       const entry = document.createElement("div");
@@ -120,32 +107,81 @@
       logDiv.scrollTop = logDiv.scrollHeight;
     }
 
-    // Global function - now accessible by buttons
     function startSimulation() {
       if (Module && Module._startSimulation) {
         Module._startSimulation();
         log("✅ Simulation started");
-      } else {
-        log("⚠️ startSimulation function not found.");
-      }
+        animateTraffic();
+        addCar(0, 40, "lime");
+        addCar(50, 100, "orange");
+      } else log("⚠️ startSimulation not found");
     }
-
     function stopSimulation() {
       if (Module && Module._stopSimulation) {
         Module._stopSimulation();
         log("🛑 Simulation stopped");
-      } else {
-        log("⚠️ stopSimulation function not found.");
-      }
+      } else log("⚠️ stopSimulation not found");
     }
-
     function emergencyOverride() {
       if (Module && Module._emergencyOverride) {
         Module._emergencyOverride();
         log("🚨 Emergency override triggered");
-      } else {
-        log("⚠️ emergencyOverride function not found.");
+      } else log("⚠️ emergencyOverride not found");
+    }
+
+    function addCar(x, y, color) {
+      cars.push({ x, y, color });
+    }
+    function updateCarPositions() {
+      for (let car of cars) {
+        car.x += 2;
+        if (car.x > 800) car.x = -50;
       }
+    }
+    function drawCars(ctx) {
+      ctx.clearRect(0, 0, 800, 300);
+      for (let car of cars) {
+        ctx.fillStyle = car.color;
+        ctx.fillRect(car.x, car.y, 40, 20);
+      }
+    }
+    function animateTraffic() {
+      const canvas = document.getElementById("trafficCanvas");
+      const ctx = canvas.getContext("2d");
+      function loop() {
+        updateCarPositions();
+        drawCars(ctx);
+        requestAnimationFrame(loop);
+      }
+      loop();
+    }
+
+    const waitChart = new Chart(document.getElementById('waitChart'), {
+      type: 'bar',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Wait Time (s)',
+          data: [],
+          backgroundColor: '#00c6ff'
+        }]
+      },
+      options: {
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+    function updateWaitGraph(vehicleId, waitTime) {
+      waitChart.data.labels.push(`V${vehicleId}`);
+      waitChart.data.datasets[0].data.push(waitTime);
+      waitChart.update();
+    }
+
+    const map = L.map('map').setView([28.6139, 77.2090], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    function addVehicleMarker(lat, lon, label = "Vehicle") {
+      L.marker([lat, lon]).addTo(map).bindPopup(label);
     }
   </script>
 </body>
