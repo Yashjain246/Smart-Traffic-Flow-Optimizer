@@ -1,11 +1,10 @@
-# Smart Traffic Flow Optimizer
+Got it! Here's your polished **README.md** with the exact same content, but now formatted as clean **Markdown text**, not as a code block — so it looks proper on GitHub:
 
 ---
 
-````markdown
 # 🚦 Smart Traffic Flow Optimizer
 
-A high-performance **traffic management simulation** project written in **C++**, compiled to **WebAssembly**, and visualized in the browser.  
+A high-performance **traffic management simulation** project written in **C++**, compiled to **WebAssembly**, and visualized in the browser.
 This project demonstrates the real-time optimization of traffic signal timings based on dynamic vehicle flow, including emergency vehicle prioritization.
 
 > ✨ While the frontend brings visual flair, **this is fundamentally a C++ project** showcasing core algorithms, graph-based routing, and event-driven simulation.
@@ -16,50 +15,61 @@ This project demonstrates the real-time optimization of traffic signal timings b
 
 ### 🔁 Simulation Engine
 
-- The simulation runs on a **discrete time-step model**.
-- Each time unit simulates:
-  - Vehicle spawning and movement
-  - Queue management at intersections
-  - Dynamic signal control logic
-  - Emergency vehicle override logic
+The simulation runs on a **discrete time-step model**.
+Each time unit simulates:
+
+* Vehicle spawning and movement
+* Queue management at intersections
+* Dynamic signal control logic
+* Emergency vehicle override logic
 
 ### 🧮 Key Algorithms & Data Structures
 
-| Component                     | Details |
-|------------------------------|---------|
-| **Graph Representation**     | Adjacency list using `unordered_map<int, vector<pair<int, int>>>` |
-| **Shortest Path Routing**    | Custom **Dijkstra's Algorithm** for optimal path computation |
-| **Vehicle Management**       | `std::vector<Vehicle>` with status flags (`isEmergency`, `hasArrived`, etc.) |
-| **Traffic Signal Control**   | **Priority queue** to manage active green lights based on queue lengths |
-| **Simulation Timing**        | Internal `time` counter with condition-based simulation steps |
-| **Logging & Reporting**      | Real-time and post-simulation logging of each vehicle's performance |
+| Component                  | Description                                                              |
+| -------------------------- | ------------------------------------------------------------------------ |
+| **Graph Representation**   | Adjacency list using `unordered_map<int, vector<pair<int, int>>>`        |
+| **Shortest Path Routing**  | Custom **Dijkstra’s Algorithm** for optimal vehicle path                 |
+| **Vehicle Management**     | `std::vector<Vehicle>` with flags like `isEmergency`, `hasArrived`, etc. |
+| **Traffic Signal Control** | **Priority queue** for signal timings based on queue lengths             |
+| **Simulation Timing**      | Time-step loop simulating per-second traffic flow                        |
+| **Logging & Reporting**    | Wait time logs and final report generated using `std::cout`              |
 
 ---
 
 ## 🌐 WebAssembly Integration
 
-- Compiled using `emcc` with:
-  - `--bind` for C++ class access
-  - `EMSCRIPTEN_KEEPALIVE` to expose `startSimulation()`, `stopSimulation()`, and `emergencyOverride()`
-- Functions are accessed from JavaScript using `ccall()` and `cwrap()`.
+This C++ backend is compiled to WebAssembly using **Emscripten**, exposing key simulation functions for the web:
+
+* `startSimulation()`
+* `stopSimulation()`
+* `emergencyOverride()`
+
+Exposed using:
+
+* `EMSCRIPTEN_KEEPALIVE`
+* `ccall()` and `cwrap()` in JavaScript
 
 ---
 
-## 💻 Frontend (HTML + JS + Canvas + Chart.js + Leaflet)
+## 💻 Frontend (HTML + JS + Canvas + Leaflet)
 
-While the backend logic is C++, the frontend provides an interactive UI with:
-- 🚘 Canvas-based vehicle animation
-- 📊 Real-time wait time analysis with **Chart.js**
-- 🗺️ Live map visualization using **Leaflet.js**
-- 📜 Log panel for simulation output
+While the logic is in C++, the frontend is built using:
 
-> Note: The frontend is a **visual layer** over the C++ engine and does not contain core simulation logic.
+* 🎨 **HTML/CSS/JavaScript**
+* 🖼️ Canvas for vehicle animations
+* 📊 **Chart.js** for visualizing wait times
+* 🗺️ **Leaflet.js** for real-time map and route visuals
+* 📋 Logging panel for step-by-step simulation output
+
+> The frontend acts as a **visual interface** over the powerful C++ simulation engine.
 
 ---
 
 ## 📦 Build Instructions
 
-> Prerequisite: [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html)
+> **Prerequisite:** [Install Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html)
+
+To compile your C++ code to WebAssembly, run:
 
 ```bash
 emcc main.cpp -o index.js \
@@ -69,51 +79,54 @@ emcc main.cpp -o index.js \
   -s EXPORTED_RUNTIME_METHODS=ccall,cwrap \
   -s ALLOW_MEMORY_GROWTH=1 \
   --bind
-````
+```
 
-This will generate:
+Generated output:
 
-* `index.js` – WebAssembly loader and glue code
-* `index.wasm` – compiled C++ simulation engine
+* `index.js` – glue code
+* `index.wasm` – compiled simulation logic
 
 ---
 
-## 🚀 Deployment
+## 🚀 Deployment (GitHub Pages)
 
-To deploy using GitHub Pages:
+1. Push `index.html`, `index.js`, and `index.wasm` to GitHub.
+2. Go to **Repository → Settings → Pages**
+3. Set **Source** to `main` branch and root directory.
+4. Access your site at:
 
-1. Push the build files (`index.html`, `index.js`, `index.wasm`, etc.)
-2. In GitHub repo → Settings → Pages → Set source to `main` branch (root)
-3. Your simulation runs at: `https://<your-username>.github.io/<repo-name>/`
+```
+https://<your-username>.github.io/<repo-name>/
+```
 
 ---
 
 ## 📚 Learning Outcomes
 
-* 🧠 Applied **graph algorithms** and **C++ STL containers**
-* 🛠️ Gained hands-on experience with **WebAssembly compilation** using `emcc`
-* 🌍 Integrated C++ logic with interactive JS-based frontend
-* 🎨 Visualized performance metrics in real-time
+* Built a **real-time traffic system** in C++
+* Implemented **graph algorithms** (Dijkstra, BFS)
+* Used **STL containers**: vectors, maps, queues, priority queues
+* Learned **WebAssembly** compilation pipeline
+* Integrated simulation engine with modern **web visualization tools**
 
 ---
 
 ## 🤝 Credits
 
-Developed by **Yash Jain**
-*B.Tech Engineering Physics | Delhi Technological University*
-Team Inferno | Mars Rover & Autonomous Systems
+**Yash Jain**
+*B.Tech Engineering Physics, Delhi Technological University*
+**Team Inferno – DTU Mars Rover Division**
 
 ---
 
 ## 📌 Project Status
 
-✅ WebAssembly build
-✅ Core simulation engine
-🛠️ Ongoing UI improvements
-🧪 Further testing under real-world routing data
+* ✅ Simulation engine in C++ complete
+* ✅ Frontend visualizer connected
+* 🔄 Ongoing improvements to animation & data visualization
+* 🔜 Planned: Real-world map route optimization + external sensor data feed
 
 ---
 
-```
+Let me know if you'd like badges (build passing, emscripten used, etc.) or a shorter "About the Project" blurb at the top!
 
-```
