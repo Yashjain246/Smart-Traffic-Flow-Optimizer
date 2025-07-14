@@ -1,4 +1,10 @@
-🔍 About the Project
+
+---
+
+# 🚦 Smart Traffic Flow Optimizer
+
+
+# 🔍 About the Project
 Smart Traffic Flow Optimizer is a performance-driven traffic simulation engine built entirely in C++, designed to optimize vehicle movement through dynamically controlled traffic signals.
 
 At its core, this project showcases:
@@ -16,16 +22,6 @@ At its core, this project showcases:
 To enable cross-platform interactivity, the engine is compiled into WebAssembly using Emscripten, exposing essential simulation controls (start, stop, emergency override) to a lightweight JavaScript frontend.
 
 This project emphasizes how powerful C++ can be for systems-level, real-time simulations — the visual frontend is just a window into the C++ engine doing the real work underneath.
-
-
----
-
-# 🚦 Smart Traffic Flow Optimizer
-
-A high-performance **traffic management simulation** project written in **C++**, compiled to **WebAssembly**, and visualized in the browser.
-This project demonstrates the real-time optimization of traffic signal timings based on dynamic vehicle flow, including emergency vehicle prioritization.
-
-> ✨ While the frontend brings visual flair, **this is fundamentally a C++ project** showcasing core algorithms, graph-based routing, and event-driven simulation.
 
 ---
 
