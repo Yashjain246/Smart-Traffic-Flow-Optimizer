@@ -93,10 +93,16 @@
   <script>
     let Module, cars = [];
 
-    createModule().then(mod => {
-      Module = mod;
-      log("🚀 WebAssembly module loaded.");
-    });
+  createModule().then(mod => {
+    Module = mod;
+    log("🚀 WebAssembly module loaded.");
+
+    // Wrap C++ functions
+    Module._startSimulation = Module.cwrap('startSimulation', 'void', []);
+    Module._stopSimulation = Module.cwrap('stopSimulation', 'void', []);
+    Module._emergencyOverride = Module.cwrap('emergencyOverride', 'void', []);
+  });
+
 
     function log(message) {
       const logDiv = document.getElementById("log");

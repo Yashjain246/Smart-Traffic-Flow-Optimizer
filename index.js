@@ -1,3 +1,16 @@
+// This code implements the `-sMODULARIZE` settings by taking the generated
+// JS program code (INNER_JS_CODE) and wrapping it in a factory function.
+
+// Single threaded MINIMAL_RUNTIME programs do not need access to
+// document.currentScript, so a simple export declaration is enough.
+var createModule = (() => {
+  // When MODULARIZE this JS may be executed later,
+  // after document.currentScript is gone, so we save it.
+  // In EXPORT_ES6 mode we can just use 'import.meta.url'.
+  var _scriptName = typeof document != 'undefined' ? document.currentScript?.src : undefined;
+  return async function(moduleArg = {}) {
+    var moduleRtn;
+
 // include: shell.js
 // The Module object: Our interface to the outside world. We import
 // and export values on it. There are various ways Module can be used:
@@ -12,7 +25,7 @@
 // after the generated code, you will need to define   var Module = {};
 // before the code. Then that object will be used in the code, and you
 // can continue to use Module afterwards as well.
-var Module = typeof Module != 'undefined' ? Module : {};
+var Module = moduleArg;
 
 // Determine the runtime environment we are in. You can customize this by
 // setting the ENVIRONMENT setting at compile time (see settings.js).
@@ -34,10 +47,6 @@ var thisProgram = './this.program';
 var quit_ = (status, toThrow) => {
   throw toThrow;
 };
-
-// In MODULARIZE mode _scriptName needs to be captured already at the very top of the page immediately when the page is parsed, so it is generated there
-// before the page load. In non-MODULARIZE modes generate it here.
-var _scriptName = typeof document != 'undefined' ? document.currentScript?.src : undefined;
 
 if (typeof __filename != 'undefined') { // Node
   _scriptName = __filename;
@@ -97,11 +106,6 @@ readAsync = async (filename, binary = true) => {
   }
 
   arguments_ = process.argv.slice(2);
-
-  // MODULARIZE will export the module in the proper place outside, we don't need to export here
-  if (typeof module != 'undefined') {
-    module['exports'] = Module;
-  }
 
   quit_ = (status, toThrow) => {
     process.exitCode = status;
@@ -356,15 +360,13 @@ function isExportedByForceFilesystem(name) {
  * their build, or no symbols that no longer exist.
  */
 function hookGlobalSymbolAccess(sym, func) {
-  if (typeof globalThis != 'undefined' && !Object.getOwnPropertyDescriptor(globalThis, sym)) {
-    Object.defineProperty(globalThis, sym, {
-      configurable: true,
-      get() {
-        func();
-        return undefined;
-      }
-    });
-  }
+  // In MODULARIZE mode the generated code runs inside a function scope and not
+  // the global scope, and JavaScript does not provide access to function scopes
+  // so we cannot dynamically modify the scrope using `defineProperty` in this
+  // case.
+  //
+  // In this mode we simply ignore requests for `hookGlobalSymbolAccess`. Since
+  // this is a debug-only feature, skipping it is not major issue.
 }
 
 function missingGlobal(sym, msg) {
@@ -416,6 +418,8 @@ function unexportedRuntimeSymbol(sym) {
 }
 
 // end include: runtime_debug.js
+var readyPromiseResolve, readyPromiseReject;
+
 // Memory management
 
 var wasmMemory;
@@ -499,6 +503,11 @@ TTY.init();
   // Begin ATPOSTCTORS hooks
   FS.ignorePermissions = false;
   // End ATPOSTCTORS hooks
+}
+
+function preMain() {
+  checkStackCookie();
+  // No ATMAINS hooks
 }
 
 function postRun() {
@@ -615,6 +624,7 @@ function abort(what) {
   /** @suppress {checkTypes} */
   var e = new WebAssembly.RuntimeError(what);
 
+  readyPromiseReject?.(e);
   // Throw the error whether or not MODULARIZE is set because abort is used
   // in code paths apart from instantiation where an exception is expected
   // to be thrown when abort is called.
@@ -3989,6 +3999,53 @@ async function createWasm() {
   }
   }
 
+  
+  var runtimeKeepaliveCounter = 0;
+  var keepRuntimeAlive = () => noExitRuntime || runtimeKeepaliveCounter > 0;
+  var _proc_exit = (code) => {
+      EXITSTATUS = code;
+      if (!keepRuntimeAlive()) {
+        Module['onExit']?.(code);
+        ABORT = true;
+      }
+      quit_(code, new ExitStatus(code));
+    };
+  
+  
+  /** @param {boolean|number=} implicit */
+  var exitJS = (status, implicit) => {
+      EXITSTATUS = status;
+  
+      checkUnflushedContent();
+  
+      // if exit() was called explicitly, warn the user if the runtime isn't actually being shut down
+      if (keepRuntimeAlive() && !implicit) {
+        var msg = `program exited (with status: ${status}), but keepRuntimeAlive() is set (counter=${runtimeKeepaliveCounter}) due to an async operation, so halting execution but not exiting the runtime or preventing further async execution (you can use emscripten_force_exit, if you want to force a true shutdown)`;
+        readyPromiseReject?.(msg);
+        err(msg);
+      }
+  
+      _proc_exit(status);
+    };
+
+  var handleException = (e) => {
+      // Certain exception types we do not treat as errors since they are used for
+      // internal control flow.
+      // 1. ExitStatus, which is thrown by exit()
+      // 2. "unwind", which is thrown by emscripten_unwind_to_js_event_loop() and others
+      //    that wish to return to JS event loop.
+      if (e instanceof ExitStatus || e == 'unwind') {
+        return EXITSTATUS;
+      }
+      checkStackCookie();
+      if (e instanceof WebAssembly.RuntimeError) {
+        if (_emscripten_stack_get_current() <= 0) {
+          err('Stack overflow detected.  You can try increasing -sSTACK_SIZE (currently set to 65536)');
+        }
+      }
+      quit_(1, e);
+    };
+
   var getCFunc = (ident) => {
       var func = Module['_' + ident]; // closure exported function
       assert(func, 'Cannot call unknown function ' + ident + ', make sure it is exported');
@@ -4138,7 +4195,6 @@ if (Module['wasmBinary']) wasmBinary = Module['wasmBinary'];
   'getTempRet0',
   'setTempRet0',
   'zeroMemory',
-  'exitJS',
   'withStackSave',
   'inetPton4',
   'inetNtop4',
@@ -4151,8 +4207,6 @@ if (Module['wasmBinary']) wasmBinary = Module['wasmBinary'];
   'autoResumeAudioContext',
   'getDynCaller',
   'dynCall',
-  'handleException',
-  'keepRuntimeAlive',
   'runtimeKeepalivePush',
   'runtimeKeepalivePop',
   'callUserCallback',
@@ -4311,6 +4365,7 @@ missingLibrarySymbols.forEach(missingLibrarySymbol)
   'stackRestore',
   'stackAlloc',
   'ptrToString',
+  'exitJS',
   'getHeapMax',
   'growMemory',
   'ENV',
@@ -4323,6 +4378,8 @@ missingLibrarySymbols.forEach(missingLibrarySymbol)
   'warnOnce',
   'readEmAsmArgsArray',
   'getExecutableName',
+  'handleException',
+  'keepRuntimeAlive',
   'asyncLoad',
   'alignMemory',
   'mmapAlloc',
@@ -4540,7 +4597,7 @@ function checkIncomingModuleAPI() {
 var _startSimulation = Module['_startSimulation'] = makeInvalidEarlyAccess('_startSimulation');
 var _stopSimulation = Module['_stopSimulation'] = makeInvalidEarlyAccess('_stopSimulation');
 var _emergencyOverride = Module['_emergencyOverride'] = makeInvalidEarlyAccess('_emergencyOverride');
-var _main = makeInvalidEarlyAccess('_main');
+var _main = Module['_main'] = makeInvalidEarlyAccess('_main');
 var _fflush = makeInvalidEarlyAccess('_fflush');
 var _strerror = makeInvalidEarlyAccess('_strerror');
 var _emscripten_stack_init = makeInvalidEarlyAccess('_emscripten_stack_init');
@@ -4555,7 +4612,7 @@ function assignWasmExports(wasmExports) {
   Module['_startSimulation'] = _startSimulation = createExportWrapper('startSimulation', 0);
   Module['_stopSimulation'] = _stopSimulation = createExportWrapper('stopSimulation', 0);
   Module['_emergencyOverride'] = _emergencyOverride = createExportWrapper('emergencyOverride', 0);
-  _main = createExportWrapper('main', 2);
+  Module['_main'] = _main = createExportWrapper('main', 2);
   _fflush = createExportWrapper('fflush', 1);
   _strerror = createExportWrapper('strerror', 1);
   _emscripten_stack_init = wasmExports['emscripten_stack_init'];
@@ -4588,14 +4645,34 @@ var wasmImports = {
   /** @export */
   fd_write: _fd_write
 };
-var wasmExports;
-createWasm();
+var wasmExports = await createWasm();
 
 
 // include: postamble.js
 // === Auto-generated postamble setup entry stuff ===
 
 var calledRun;
+
+function callMain() {
+  assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
+  assert(typeof onPreRuns === 'undefined' || onPreRuns.length == 0, 'cannot call main when preRun functions remain to be called');
+
+  var entryFunction = _main;
+
+  var argc = 0;
+  var argv = 0;
+
+  try {
+
+    var ret = entryFunction(argc, argv);
+
+    // if we're not running an evented main loop, it's time to exit
+    exitJS(ret, /* implicit = */ true);
+    return ret;
+  } catch (e) {
+    return handleException(e);
+  }
+}
 
 function stackCheckInit() {
   // This is normally called automatically during __wasm_call_ctors but need to
@@ -4634,10 +4711,14 @@ function run() {
 
     initRuntime();
 
+    preMain();
+
+    readyPromiseResolve?.(Module);
     Module['onRuntimeInitialized']?.();
     consumedModuleProp('onRuntimeInitialized');
 
-    assert(!Module['_main'], 'compiled without a main, but one is present. if you added it from JS, use Module["onRuntimeInitialized"]');
+    var noInitialRun = Module['noInitialRun'] || false;
+    if (!noInitialRun) callMain();
 
     postRun();
   }
@@ -4708,4 +4789,53 @@ preInit();
 run();
 
 // end include: postamble.js
+
+// include: postamble_modularize.js
+// In MODULARIZE mode we wrap the generated code in a factory function
+// and return either the Module itself, or a promise of the module.
+//
+// We assign to the `moduleRtn` global here and configure closure to see
+// this as and extern so it won't get minified.
+
+if (runtimeInitialized)  {
+  moduleRtn = Module;
+} else {
+  // Set up the promise that indicates the Module is initialized
+  moduleRtn = new Promise((resolve, reject) => {
+    readyPromiseResolve = resolve;
+    readyPromiseReject = reject;
+  });
+}
+
+// Assertion for attempting to access module properties on the incoming
+// moduleArg.  In the past we used this object as the prototype of the module
+// and assigned properties to it, but now we return a distinct object.  This
+// keeps the instance private until it is ready (i.e the promise has been
+// resolved).
+for (const prop of Object.keys(Module)) {
+  if (!(prop in moduleArg)) {
+    Object.defineProperty(moduleArg, prop, {
+      configurable: true,
+      get() {
+        abort(`Access to module property ('${prop}') is no longer possible via the module constructor argument; Instead, use the result of the module constructor.`)
+      }
+    });
+  }
+}
+// end include: postamble_modularize.js
+
+
+
+    return moduleRtn;
+  };
+})();
+
+// Export using a UMD style export, or ES6 exports if selected
+if (typeof exports === 'object' && typeof module === 'object') {
+  module.exports = createModule;
+  // This default export looks redundant, but it allows TS to import this
+  // commonjs style module.
+  module.exports.default = createModule;
+} else if (typeof define === 'function' && define['amd'])
+  define([], () => createModule);
 
