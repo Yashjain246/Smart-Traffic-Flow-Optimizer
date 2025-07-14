@@ -77,9 +77,9 @@
 <body>
   <header>🚦 Smart Traffic Flow Optimizer</header>
   <div class="controls">
-    <button onclick="startSimulation()">▶ Start Simulation</button>
-    <button onclick="stopSimulation()">⏹ Stop Simulation</button>
-    <button onclick="emergencyOverride()">🚨 Emergency Override</button>
+    <button id="startBtn">▶ Start Simulation</button>
+    <button id="stopBtn">⏹ Stop Simulation</button>
+    <button id="emergencyBtn">🚨 Emergency Override</button>
   </div>
 
   <canvas id="trafficCanvas" width="800" height="300"></canvas>
@@ -107,7 +107,7 @@
       logDiv.scrollTop = logDiv.scrollHeight;
     }
 
-    function startSimulation() {
+    document.getElementById("startBtn").addEventListener("click", () => {
       if (Module && Module._startSimulation) {
         Module._startSimulation();
         log("✅ Simulation started");
@@ -115,19 +115,21 @@
         addCar(0, 40, "lime");
         addCar(50, 100, "orange");
       } else log("⚠️ startSimulation not found");
-    }
-    function stopSimulation() {
+    });
+
+    document.getElementById("stopBtn").addEventListener("click", () => {
       if (Module && Module._stopSimulation) {
         Module._stopSimulation();
         log("🛑 Simulation stopped");
       } else log("⚠️ stopSimulation not found");
-    }
-    function emergencyOverride() {
+    });
+
+    document.getElementById("emergencyBtn").addEventListener("click", () => {
       if (Module && Module._emergencyOverride) {
         Module._emergencyOverride();
         log("🚨 Emergency override triggered");
       } else log("⚠️ emergencyOverride not found");
-    }
+    });
 
     function addCar(x, y, color) {
       cars.push({ x, y, color });
