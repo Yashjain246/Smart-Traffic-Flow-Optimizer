@@ -1,5 +1,5 @@
 #include "simulation.hpp"
-
+#include <emscripten.h>
 int main() {
     Graph g;
     
@@ -28,22 +28,23 @@ int main() {
     return 0;
 }
 
-#include <emscripten.h>
+
 
 extern "C" {
+    EMSCRIPTEN_KEEPALIVE
+    void startSimulation() {
+        // your simulation logic
+    }
 
-EMSCRIPTEN_KEEPALIVE
-void startSimulation() {
-    // Example logic for simulation start
-    std::cout << "Simulation started!" << std::endl;
-    // Call your traffic optimization or signal handling logic here
+    EMSCRIPTEN_KEEPALIVE
+    void stopSimulation() {
+        // your simulation logic
+    }
+
+    EMSCRIPTEN_KEEPALIVE
+    void emergencyOverride() {
+        // your logic for handling emergency
+    }
 }
 
-EMSCRIPTEN_KEEPALIVE
-void stopSimulation() {
-    std::cout << "Simulation stopped!" << std::endl;
-    // Optional: reset states or pause simulation
-}
-
-}
 
