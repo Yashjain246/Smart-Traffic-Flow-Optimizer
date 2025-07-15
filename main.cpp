@@ -1,13 +1,19 @@
 #include "simulation.hpp"
+#include <iostream>
+
+#ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+#define KEEPALIVE EMSCRIPTEN_KEEPALIVE
+#else
+#define KEEPALIVE
+#endif
 
 Simulation sim;
 Graph g;
 
 extern "C" {
 
-EMSCRIPTEN_KEEPALIVE
-void startSimulation() {
+KEEPALIVE void startSimulation() {
     g = Graph();
     g.addEdge(0, 1, 4);
     g.addEdge(1, 2, 3);
@@ -27,16 +33,22 @@ void startSimulation() {
     sim.report();
 }
 
-EMSCRIPTEN_KEEPALIVE
-void stopSimulation() {
-    printf("Simulation stopped.\n");
+KEEPALIVE void stopSimulation() {
+    std::cout << "Simulation stopped." << std::endl;
 }
 
-EMSCRIPTEN_KEEPALIVE
-void emergencyOverride() {
+KEEPALIVE void emergencyOverride() {
     sim.spawnVehicle(g, 99, 0, 3, true);
-    printf("Emergency vehicle spawned.\n");
+    std::cout << "Emergency vehicle spawned." << std::endl;
 }
 
-}
+} // extern "C"
 
+#ifndef __EMSCRIPTEN__
+int main() {
+    startSimulation();
+    emergencyOverride();
+    stopSimulation();
+    return 0;
+}
+#endif
