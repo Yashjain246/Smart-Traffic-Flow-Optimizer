@@ -1,3 +1,4 @@
+// main.cpp (keep your Simulation/Graph / headers as-is)
 #include "simulation.hpp"
 #include <iostream>
 
@@ -8,20 +9,20 @@
 #define KEEPALIVE
 #endif
 
-Simulation sim;
-Graph g;
+static Simulation sim;
+static Graph g;
 
 extern "C" {
 
 KEEPALIVE void startSimulation() {
+    // reset graph + sim and run few steps — your function body
     g = Graph();
-    g.addEdge(0, 1, 4);
-    g.addEdge(1, 2, 3);
-    g.addEdge(2, 3, 2);
-    g.addEdge(0, 3, 10);
+    g.addEdge(0,1,4);
+    g.addEdge(1,2,3);
+    g.addEdge(2,3,2);
+    g.addEdge(0,3,10);
 
     sim = Simulation();
-
     sim.spawnVehicle(g, 0, 0, 3);
     sim.spawnVehicle(g, 1, 1, 3, true);
     sim.spawnVehicle(g, 2, 0, 2);
@@ -29,26 +30,16 @@ KEEPALIVE void startSimulation() {
     sim.spawnVehicle(g, 4, 1, 2, true);
 
     for (int t = 0; t < 30; ++t) sim.step();
-
     sim.report();
 }
 
 KEEPALIVE void stopSimulation() {
-    std::cout << "Simulation stopped." << std::endl;
+    std::cout << "Simulation stopped.\n";
 }
 
 KEEPALIVE void emergencyOverride() {
     sim.spawnVehicle(g, 99, 0, 3, true);
-    std::cout << "Emergency vehicle spawned." << std::endl;
+    std::cout << "Emergency vehicle spawned.\n";
 }
 
 } // extern "C"
-
-#ifndef __EMSCRIPTEN__
-int main() {
-    startSimulation();
-    emergencyOverride();
-    stopSimulation();
-    return 0;
-}
-#endif

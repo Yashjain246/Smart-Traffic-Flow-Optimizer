@@ -1,204 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Smart Traffic Flow Optimizer</title>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Montserrat', sans-serif;
-      background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
-      color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-    }
-    header {
-      width: 100%;
-      text-align: center;
-      padding: 3rem 1rem;
-      background: url('https://images.unsplash.com/photo-1581093588401-12f6d04015f3?auto=format&fit=crop&w=1500&q=80') center/cover;
-      font-size: 2.5rem;
-      font-weight: 700;
-      text-shadow: 1px 1px 4px #000;
-    }
-    .controls {
-      margin: 2rem;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-    button {
-      padding: 14px 28px;
-      font-size: 1rem;
-      font-weight: 600;
-      border: none;
-      border-radius: 8px;
-      background: linear-gradient(to right, #0072ff, #00c6ff);
-      color: white;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-    button:hover {
-      transform: scale(1.05);
-      box-shadow: 0 8px 16px rgba(0, 198, 255, 0.4);
-    }
-    canvas, #map {
-      margin-top: 2rem;
-      border: 2px solid #00c6ff;
-      border-radius: 10px;
-    }
-    #log {
-      width: 90%;
-      max-width: 800px;
-      height: 200px;
-      background: rgba(255,255,255,0.1);
-      border: 1px solid #00c6ff;
-      border-radius: 12px;
-      padding: 1rem;
-      font-family: monospace;
-      overflow-y: auto;
-      margin-top: 2rem;
-    }
-    .log-entry { margin-bottom: 0.5rem; }
-    footer {
-      padding: 1rem;
-      font-size: 0.9rem;
-      color: #bbb;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Traffic Flow Optimizer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        header {
+            text-align: center;
+            padding: 20px;
+        }
+        h1 {
+            color: #d9534f;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 2px 5px rgba(0,0,0,0.1);
+            max-width: 800px;
+            margin: auto;
+        }
+        a {
+            color: #0275d8;
+        }
+    </style>
 </head>
 <body>
-  <header>🚦 Smart Traffic Flow Optimizer</header>
-  <div class="controls">
-    <button onclick="startSimulation()">▶ Start Simulation</button>
-    <button onclick="stopSimulation()">⏹ Stop Simulation</button>
-    <button onclick="emergencyOverride()">🚨 Emergency Override</button>
-  </div>
+    <header>
+        <h1>🚦 Smart Traffic Flow Optimizer</h1>
+        <p>Backend written in C++ | Dynamic Red Light Timing Based on Lane Load</p>
+    </header>
 
-  <canvas id="trafficCanvas" width="800" height="300"></canvas>
-  <canvas id="waitChart" width="800" height="300"></canvas>
-  <div id="map" style="width:800px;height:400px"></div>
-  <div id="log"><div class="log-entry">📝 Simulation logs will appear here...</div></div>
+    <div class="container">
+        <h2>About the Project</h2>
+        <p>
+            This project implements a **C++ backend algorithm** that dynamically adjusts red light timings
+            based on real-time traffic load in each lane, improving road efficiency and reducing wait times.
+        </p>
 
-  <footer>Made by Yash Jain | Powered by C++ & WebAssembly</footer>
+        <h2>Algorithms Used</h2>
+        <ul>
+            <li>Priority Queue for lane selection</li>
+            <li>Greedy load balancing</li>
+            <li>Dynamic weight adjustments</li>
+        </ul>
 
-  <!-- Load WASM and initialize -->
-  <script src="index.js"></script>
-  <script>
-    let Module, cars = [];
-
-    createModule().then(mod => {
-      Module = mod;
-      console.log("✅ WebAssembly module loaded");
-      log("✅ WebAssembly module loaded");
-
-      // Wrap C++ functions
-      Module._startSimulation = Module.cwrap('startSimulation', 'void', []);
-      Module._stopSimulation = Module.cwrap('stopSimulation', 'void', []);
-      Module._emergencyOverride = Module.cwrap('emergencyOverride', 'void', []);
-    });
-
-    function log(message) {
-      const logDiv = document.getElementById("log");
-      const entry = document.createElement("div");
-      entry.className = "log-entry";
-      entry.textContent = `→ ${message}`;
-      logDiv.appendChild(entry);
-      logDiv.scrollTop = logDiv.scrollHeight;
-    }
-
-    function startSimulation() {
-      if (Module && Module._startSimulation) {
-        Module._startSimulation();
-        log("✅ Simulation started");
-        animateTraffic();
-        addCar(0, 40, "lime");
-        addCar(50, 100, "orange");
-      } else log("⚠️ startSimulation not found");
-    }
-
-    function stopSimulation() {
-      if (Module && Module._stopSimulation) {
-        Module._stopSimulation();
-        log("🛑 Simulation stopped");
-      } else log("⚠️ stopSimulation not found");
-    }
-
-    function emergencyOverride() {
-      if (Module && Module._emergencyOverride) {
-        Module._emergencyOverride();
-        log("🚨 Emergency override triggered");
-      } else log("⚠️ emergencyOverride not found");
-    }
-
-    function addCar(x, y, color) {
-      cars.push({ x, y, color });
-    }
-
-    function updateCarPositions() {
-      for (let car of cars) {
-        car.x += 2;
-        if (car.x > 800) car.x = -50;
-      }
-    }
-
-    function drawCars(ctx) {
-      ctx.clearRect(0, 0, 800, 300);
-      for (let car of cars) {
-        ctx.fillStyle = car.color;
-        ctx.fillRect(car.x, car.y, 40, 20);
-      }
-    }
-
-    function animateTraffic() {
-      const canvas = document.getElementById("trafficCanvas");
-      const ctx = canvas.getContext("2d");
-      function loop() {
-        updateCarPositions();
-        drawCars(ctx);
-        requestAnimationFrame(loop);
-      }
-      loop();
-    }
-
-    // Wait Time Graph
-    const waitChart = new Chart(document.getElementById('waitChart'), {
-      type: 'bar',
-      data: {
-        labels: [],
-        datasets: [{
-          label: 'Wait Time (s)',
-          data: [],
-          backgroundColor: '#00c6ff'
-        }]
-      },
-      options: {
-        scales: { y: { beginAtZero: true } }
-      }
-    });
-
-    function updateWaitGraph(vehicleId, waitTime) {
-      waitChart.data.labels.push(`V${vehicleId}`);
-      waitChart.data.datasets[0].data.push(waitTime);
-      waitChart.update();
-    }
-
-    // Leaflet Map
-    const map = L.map('map').setView([28.6139, 77.2090], 13); // Delhi
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
-
-    function addVehicleMarker(lat, lon, label = "Vehicle") {
-      L.marker([lat, lon]).addTo(map).bindPopup(label);
-    }
-  </script>
+        <h2>Source Code</h2>
+        <p>View the full C++ implementation on <a href="https://github.com/YOUR_USERNAME/YOUR_REPO" target="_blank">GitHub</a>.</p>
+    </div>
 </body>
 </html>
