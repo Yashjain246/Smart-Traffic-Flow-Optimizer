@@ -7,53 +7,100 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background: #f5f5f5;
+            background: #f8f9fa;
             margin: 0;
-            padding: 20px;
-            color: #333;
+            padding: 0;
+            text-align: center;
         }
         header {
-            text-align: center;
+            background: #fff3f3;
             padding: 20px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
         }
         h1 {
             color: #d9534f;
+            margin: 0;
         }
-        .container {
-            background: white;
+        main {
+            max-width: 800px;
+            margin: 20px auto;
+            background: #ffffff;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0px 2px 5px rgba(0,0,0,0.1);
-            max-width: 800px;
-            margin: auto;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        a {
-            color: #0275d8;
+        input, button {
+            padding: 10px;
+            margin: 5px;
+            font-size: 16px;
+        }
+        button {
+            cursor: pointer;
+            background-color: #d9534f;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #c9302c;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 10px;
+            background: #e9ecef;
+            border-radius: 5px;
+            min-height: 50px;
+            text-align: left;
         }
     </style>
 </head>
 <body>
     <header>
         <h1>🚦 Smart Traffic Flow Optimizer</h1>
-        <p>Backend written in C++ | Dynamic Red Light Timing Based on Lane Load</p>
+        <p>Dynamic Red Light Timing Based on Lane Load</p>
     </header>
+    <main>
+        <h2>Run Simulation</h2>
+        <label>Lane Load: <input type="number" id="laneLoad" value="10"></label><br>
+        <label>Vehicle Count: <input type="number" id="vehicleCount" value="50"></label><br>
+        <button id="startBtn">Start Simulation</button>
+        <button id="stopBtn">Stop Simulation</button>
+        <button id="emergencyBtn">Emergency Override</button>
 
-    <div class="container">
-        <h2>About the Project</h2>
-        <p>
-            This project implements a **C++ backend algorithm** that dynamically adjusts red light timings
-            based on real-time traffic load in each lane, improving road efficiency and reducing wait times.
-        </p>
+        <div id="output">Results will appear here...</div>
+    </main>
 
-        <h2>Algorithms Used</h2>
-        <ul>
-            <li>Priority Queue for lane selection</li>
-            <li>Greedy load balancing</li>
-            <li>Dynamic weight adjustments</li>
-        </ul>
+    <script src="module.js"></script>
+    <script>
+        var Module = SmartTrafficModule();
 
-        <h2>Source Code</h2>
-        <p>View the full C++ implementation on <a href="https://github.com/YOUR_USERNAME/YOUR_REPO" target="_blank">GitHub</a>.</p>
-    </div>
+        function logOutput(message) {
+            document.getElementById('output').innerHTML += `<div>${message}</div>`;
+        }
+
+        document.getElementById('startBtn').addEventListener('click', function() {
+            let laneLoad = document.getElementById('laneLoad').value;
+            let vehicleCount = document.getElementById('vehicleCount').value;
+            // Call C++ WASM function
+            Module.then(instance => {
+                instance._startSimulation(parseInt(laneLoad), parseInt(vehicleCount));
+                logOutput(`Simulation started with laneLoad=${laneLoad}, vehicleCount=${vehicleCount}`);
+            });
+        });
+
+        document.getElementById('stopBtn').addEventListener('click', function() {
+            Module.then(instance => {
+                instance._stopSimulation();
+                logOutput("Simulation stopped.");
+            });
+        });
+
+        document.getElementById('emergencyBtn').addEventListener('click', function() {
+            Module.then(instance => {
+                instance._emergencyOverride();
+                logOutput("Emergency override triggered!");
+            });
+        });
+    </script>
 </body>
 </html>
