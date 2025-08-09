@@ -2,105 +2,113 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Traffic Flow Optimizer</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background: #f8f9fa;
-            margin: 0;
-            padding: 0;
-            text-align: center;
-        }
-        header {
-            background: #fff3f3;
+            background-color: #f4f4f4;
             padding: 20px;
-            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+            text-align: center;
         }
         h1 {
             color: #d9534f;
-            margin: 0;
         }
-        main {
-            max-width: 800px;
-            margin: 20px auto;
-            background: #ffffff;
+        .container {
+            background: #fff;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0px 2px 6px rgba(0,0,0,0.2);
+            display: inline-block;
+            margin-top: 20px;
         }
-        input, button {
-            padding: 10px;
-            margin: 5px;
-            font-size: 16px;
+        label {
+            display: block;
+            margin: 8px 0 4px;
+            font-weight: bold;
+        }
+        input {
+            padding: 8px;
+            width: 200px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
         }
         button {
-            cursor: pointer;
+            margin-top: 15px;
+            padding: 10px 20px;
             background-color: #d9534f;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 4px;
+            cursor: pointer;
         }
         button:hover {
             background-color: #c9302c;
         }
         #output {
             margin-top: 20px;
+            background: #eee;
             padding: 10px;
-            background: #e9ecef;
-            border-radius: 5px;
-            min-height: 50px;
+            border-radius: 6px;
+            white-space: pre-wrap;
             text-align: left;
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>🚦 Smart Traffic Flow Optimizer</h1>
-        <p>Dynamic Red Light Timing Based on Lane Load</p>
-    </header>
-    <main>
-        <h2>Run Simulation</h2>
-        <label>Lane Load: <input type="number" id="laneLoad" value="10"></label><br>
-        <label>Vehicle Count: <input type="number" id="vehicleCount" value="50"></label><br>
-        <button id="startBtn">Start Simulation</button>
-        <button id="stopBtn">Stop Simulation</button>
-        <button id="emergencyBtn">Emergency Override</button>
+
+    <h1>🚦 Smart Traffic Flow Optimizer</h1>
+    <div class="container">
+        <label for="lane1">Lane 1 vehicles:</label>
+        <input type="number" id="lane1" value="10">
+
+        <label for="lane2">Lane 2 vehicles:</label>
+        <input type="number" id="lane2" value="15">
+
+        <label for="lane3">Lane 3 vehicles:</label>
+        <input type="number" id="lane3" value="8">
+
+        <br>
+        <button onclick="runSimulation()">Run Simulation</button>
 
         <div id="output">Results will appear here...</div>
-    </main>
+    </div>
 
     <script src="module.js"></script>
     <script>
-        var Module = SmartTrafficModule();
+        let wasmModule;
 
-        function logOutput(message) {
-            document.getElementById('output').innerHTML += `<div>${message}</div>`;
+        SmartTrafficModule().then(Module => {
+            wasmModule = Module;
+        });
+
+        function runSimulation() {
+            if (!wasmModule) {
+                alert("WASM module not loaded yet!");
+                return;
+            }
+
+            const lane1 = parseInt(document.getElementById("lane1").value) || 0;
+            const lane2 = parseInt(document.getElementById("lane2").value) || 0;
+            const lane3 = parseInt(document.getElementById("lane3").value) || 0;
+
+            // Call C++ function to set lane data
+            wasmModule.ccall(
+                "setLaneData", // C++ function name
+                null, // return type
+                ["number", "number", "number"], // argument types
+                [lane1, lane2, lane3] // arguments
+            );
+
+            // Call C++ function to start simulation
+            const resultPtr = wasmModule.ccall(
+                "startSimulation", // C++ function name
+                "string", // return type
+                [], // argument types
+                [] // arguments
+            );
+
+            document.getElementById("output").textContent = resultPtr;
         }
-
-        document.getElementById('startBtn').addEventListener('click', function() {
-            let laneLoad = document.getElementById('laneLoad').value;
-            let vehicleCount = document.getElementById('vehicleCount').value;
-            // Call C++ WASM function
-            Module.then(instance => {
-                instance._startSimulation(parseInt(laneLoad), parseInt(vehicleCount));
-                logOutput(`Simulation started with laneLoad=${laneLoad}, vehicleCount=${vehicleCount}`);
-            });
-        });
-
-        document.getElementById('stopBtn').addEventListener('click', function() {
-            Module.then(instance => {
-                instance._stopSimulation();
-                logOutput("Simulation stopped.");
-            });
-        });
-
-        document.getElementById('emergencyBtn').addEventListener('click', function() {
-            Module.then(instance => {
-                instance._emergencyOverride();
-                logOutput("Emergency override triggered!");
-            });
-        });
     </script>
 </body>
 </html>

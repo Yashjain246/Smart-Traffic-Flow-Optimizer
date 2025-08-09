@@ -1,45 +1,49 @@
-// main.cpp (keep your Simulation/Graph / headers as-is)
-#include "simulation.hpp"
-#include <iostream>
+#include <emscripten/emscripten.h>
+#include <string>
+#include <sstream>
 
-#ifdef __EMSCRIPTEN__
-#include <emscripten.h>
-#define KEEPALIVE EMSCRIPTEN_KEEPALIVE
-#else
-#define KEEPALIVE
-#endif
-
-static Simulation sim;
-static Graph g;
+int lane1Vehicles = 0;
+int lane2Vehicles = 0;
+int lane3Vehicles = 0;
 
 extern "C" {
 
-KEEPALIVE void startSimulation() {
-    // reset graph + sim and run few steps — your function body
-    g = Graph();
-    g.addEdge(0,1,4);
-    g.addEdge(1,2,3);
-    g.addEdge(2,3,2);
-    g.addEdge(0,3,10);
-
-    sim = Simulation();
-    sim.spawnVehicle(g, 0, 0, 3);
-    sim.spawnVehicle(g, 1, 1, 3, true);
-    sim.spawnVehicle(g, 2, 0, 2);
-    sim.spawnVehicle(g, 3, 3, 0, false);
-    sim.spawnVehicle(g, 4, 1, 2, true);
-
-    for (int t = 0; t < 30; ++t) sim.step();
-    sim.report();
+// Set lane data from JS
+EMSCRIPTEN_KEEPALIVE
+void setLaneData(int l1, int l2, int l3) {
+    lane1Vehicles = l1;
+    lane2Vehicles = l2;
+    lane3Vehicles = l3;
 }
 
-KEEPALIVE void stopSimulation() {
-    std::cout << "Simulation stopped.\n";
-}
+// Start simulation and return result
+EMSCRIPTEN_KEEPALIVE
+const char* startSimulation() {
+    static std::string result; // persistent to avoid returning pointer to temporary
 
-KEEPALIVE void emergencyOverride() {
-    sim.spawnVehicle(g, 99, 0, 3, true);
-    std::cout << "Emergency vehicle spawned.\n";
+    // Determine lane with most vehicles
+    int maxLane = 1;
+    int maxVehicles = lane1Vehicles;
+
+    if (lane2Vehicles > maxVehicles) {
+        maxLane = 2;
+        maxVehicles = lane2Vehicles;
+    }
+    if (lane3Vehicles > maxVehicles) {
+        maxLane = 3;
+        maxVehicles = lane3Vehicles;
+    }
+
+    std::ostringstream oss;
+    oss << "Simulation Results:\n";
+    oss << "Lane 1: " << lane1Vehicles << " vehicles\n";
+    oss << "Lane 2: " << lane2Vehicles << " vehicles\n";
+    oss << "Lane 3: " << lane3Vehicles << " vehicles\n\n";
+    oss << "Recommendation: Give priority to Lane " << maxLane
+        << " with " << maxVehicles << " vehicles.";
+
+    result = oss.str();
+    return result.c_str();
 }
 
 } // extern "C"
