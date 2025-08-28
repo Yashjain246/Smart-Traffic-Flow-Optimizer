@@ -1,18 +1,63 @@
-import SmartTrafficModule from './module.js';
+const runButton = document.getElementById('runButton');
+const outputLog = document.getElementById('output-log');
+const form = document.getElementById('simulation-form');
 
-function addToPage(text) {
-    const output = document.getElementById("output");
-    output.textContent += text + "\n";
-}
+let Module = {
+    preRun: [],
+    postRun: [],
+    print: (function() {
+        return function(text) {
+            if (arguments.length > 1) {
+                text = Array.prototype.slice.call(arguments).join(' ');
+            }
+            console.log(text);
+            if (outputLog) {
+                outputLog.textContent += text + "\n";
+            }
+        };
+    })(),
+    printErr: function(text) {
+        if (arguments.length > 1) {
+            text = Array.prototype.slice.call(arguments).join(' ');
+        }
+        console.error(text);
+        if (outputLog) {
+            outputLog.textContent += "[ERROR] " + text + "\n";
+        }
+    },
+    canvas: (function() {
+        return document.getElementById('canvas');
+    })(),
+    setStatus: function(text) {
+        // Status updates can be handled here if needed
+    },
+    totalDependencies: 0,
+    monitorRunDependencies: function(left) {
+        // Dependency monitoring can be handled here
+    }
+};
 
-SmartTrafficModule({
-    print: addToPage,
-    printErr: addToPage
-}).then((Module) => {
-    addToPage("WASM module loaded!");
-
-    // Example calls to your C++ functions:
-    Module._startSimulation();
-    Module._emergencyOverride();
-    Module._stopSimulation();
+form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    runSimulation();
 });
+
+function runSimulation() {
+    outputLog.textContent = 'Starting simulation...\n\n';
+
+    const numNodes = document.getElementById('numNodes').value;
+    const numEdges = document.getElementById('numEdges').value;
+    const edgesData = document.getElementById('edgesData').value.trim().split('\n').join(' ');
+    const startNode = document.getElementById('startNode').value;
+    const emergencyNode = document.getElementById('emergencyNode').value;
+
+    const args = [
+        numNodes,
+        numEdges,
+        ...edgesData.split(' '),
+        startNode,
+        emergencyNode
+    ];
+
+    Module.callMain(args);
+}
