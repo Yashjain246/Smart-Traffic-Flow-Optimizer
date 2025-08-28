@@ -1,49 +1,37 @@
-#include <emscripten/emscripten.h>
+#include <iostream>
+#include <vector>
 #include <string>
-#include <sstream>
+#include "simulation.hpp"
+#include "graph.hpp"
+#include "utils.hpp"
 
-int lane1Vehicles = 0;
-int lane2Vehicles = 0;
-int lane3Vehicles = 0;
+using namespace std;
 
-extern "C" {
+int main() {
+    srand(time(0));
 
-// Set lane data from JS
-EMSCRIPTEN_KEEPALIVE
-void setLaneData(int l1, int l2, int l3) {
-    lane1Vehicles = l1;
-    lane2Vehicles = l2;
-    lane3Vehicles = l3;
-}
+    Graph g;
+    g.addEdge(0, 1, 4);
+    g.addEdge(0, 2, 2);
+    g.addEdge(1, 3, 5);
+    g.addEdge(2, 3, 8);
+    g.addEdge(2, 4, 10);
+    g.addEdge(3, 4, 2);
+    g.addEdge(3, 5, 6);
+    g.addEdge(4, 5, 3);
 
-// Start simulation and return result
-EMSCRIPTEN_KEEPALIVE
-const char* startSimulation() {
-    static std::string result; // persistent to avoid returning pointer to temporary
+    Simulation sim;
 
-    // Determine lane with most vehicles
-    int maxLane = 1;
-    int maxVehicles = lane1Vehicles;
-
-    if (lane2Vehicles > maxVehicles) {
-        maxLane = 2;
-        maxVehicles = lane2Vehicles;
-    }
-    if (lane3Vehicles > maxVehicles) {
-        maxLane = 3;
-        maxVehicles = lane3Vehicles;
+    // Spawn regular vehicles
+    for (int i = 0; i < 10; ++i) {
+        sim.spawnVehicle(g, i, randInt(0, 5), randInt(0, 5));
     }
 
-    std::ostringstream oss;
-    oss << "Simulation Results:\n";
-    oss << "Lane 1: " << lane1Vehicles << " vehicles\n";
-    oss << "Lane 2: " << lane2Vehicles << " vehicles\n";
-    oss << "Lane 3: " << lane3Vehicles << " vehicles\n\n";
-    oss << "Recommendation: Give priority to Lane " << maxLane
-        << " with " << maxVehicles << " vehicles.";
+    // Spawn one emergency vehicle
+    sim.spawnVehicle(g, 10, 0, 5, true);
 
-    result = oss.str();
-    return result.c_str();
+    sim.run(200); // Run for 200 time steps
+    sim.report();
+
+    return 0;
 }
-
-} // extern "C"

@@ -48,51 +48,35 @@ public:
         v.start = start;
         v.end = end;
         v.path = g.dijkstra(start, end);
-        v.currentNodeIndex = 0;
         v.isEmergency = isEmergency;
         vehicles.push_back(v);
     }
 
-    // --- Update traffic lights based on Greedy logic and emergency detection
-    void updateSignals() {
-        for (auto& pair : intersections) {
-            int id = pair.first;
-            auto& inter = pair.second;
-            bool emergencyFound = false;
-
-            for (int lane = 0; lane < 4; ++lane) {
-                queue<int>& q = inter.lanes[lane];
-                queue<int> temp;
-
-                while (!q.empty()) {
-                    int vid = q.front(); q.pop();
-                    temp.push(vid);
-
-                    auto& v = vehicles[vid];
-                    if (v.isEmergency && !v.reached) {
-                        inter.greenLane = lane;
-                        inter.timer = 0;
-                        emergencyFound = true;
-                        break;
-                    }
-                }
-
-                q = temp;
-                if (emergencyFound) break;
-            }
-
-            if (!emergencyFound && inter.timer % 5 == 0) {
-                inter.greenLane = chooseGreenLaneGreedy(inter.lanes);
-            }
-
-            inter.timer++;
+    // --- Main simulation loop
+    void run(int duration) {
+        while (time < duration) {
+            updateSignals();
+            updateVehicles();
         }
     }
 
-    // --- Perform one simulation tick
-    void step() {
-        updateSignals();
+private:
+    // --- Update traffic light timers and state
+    void updateSignals() {
+        for (auto& pair : intersections) {
+            Intersection& inter = pair.second;
+            inter.timer--;
 
+            if (inter.timer <= 0) {
+                inter.greenLane = chooseGreenLaneGreedy(inter.lanes);
+                int trafficVol = inter.lanes[inter.greenLane].size();
+                inter.timer = max(5, min(20, trafficVol * 2)); // Dynamic timer
+            }
+        }
+    }
+    
+    // --- Handle vehicle movement and emergency priority
+    void updateVehicles() {
         for (auto& v : vehicles) {
             if (v.reached) continue;
             v.totalTime++;
@@ -106,7 +90,13 @@ public:
             int next = v.path[v.currentNodeIndex + 1];
             Intersection& inter = intersections[curr];
 
-            int lane = rand() % 4; // 🔁 Simplified direction logic; replace with actual if needed
+            // EMERGENCY OVERRIDE: Force green light along its path
+            if (v.isEmergency) {
+                inter.greenLane = getLaneForNextNode(curr, next);
+                inter.timer = 10; // Keep it green
+            }
+
+            int lane = rand() % 4; // Simplified direction logic
 
             if (lane == inter.greenLane) {
                 v.currentNodeIndex++;
@@ -120,6 +110,14 @@ public:
         time++;
     }
 
+    // --- (Helper) Determine which lane corresponds to the next node in the path
+    int getLaneForNextNode(int current, int next) {
+        // This is a placeholder. A real implementation would use coordinates
+        // to determine if 'next' is North, East, South, or West of 'current'.
+        return rand() % 4;
+    }
+
+public:
     // --- Show performance after simulation
     void report() {
         int totalWait = 0, reachedCount = 0;
@@ -137,8 +135,7 @@ public:
         }
 
         cout << "\nAverage Wait Time: "
-             << (reachedCount ? (double)totalWait / reachedCount : 0.0)
-             << "s over " << reachedCount << " vehicles\n";
-        cout << "================================\n";
+             << (reachedCount > 0 ? (double)totalWait / reachedCount : 0)
+             << "s\n";
     }
 };
