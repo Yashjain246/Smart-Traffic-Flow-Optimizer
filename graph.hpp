@@ -45,10 +45,11 @@ public:
         }
 
         vector<int> path;
-        int temp = dest;
-        while (temp != src) {
-            path.push_back(temp);
-            temp = parent[temp];
+        int curr = dest;
+        while (curr != src) {
+            path.push_back(curr);
+            if (parent.find(curr) == parent.end()) return {}; // No path
+            curr = parent[curr];
         }
         path.push_back(src);
         reverse(path.begin(), path.end());

@@ -7,56 +7,55 @@
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🚦 Smart Traffic Flow Optimizer</h1>
-            [cite_start]<p>An intelligent traffic management system using Dijkstra's algorithm to optimize flow and prioritize emergency vehicles[cite: 2019, 2020].</p>
+            <div class="logo">🚦</div>
+            <h1>Smart Traffic Flow Optimizer</h1>
+            <p>A dynamic traffic management simulation using C++ and WebAssembly.</p>
         </header>
 
         <main>
             <div class="panel" id="input-panel">
-                <h2>Configuration</h2>
+                <div class="panel-header">
+                    <h2>Configuration</h2>
+                    <span>Set simulation parameters</span>
+                </div>
                 <form id="simulation-form">
                     <div class="form-group">
-                        <label for="numNodes">Number of Intersections (Nodes)</label>
-                        <input type="number" id="numNodes" value="5" required>
+                        <label for="numVehicles">Number of Vehicles</label>
+                        <input type="number" id="numVehicles" value="15" required>
                     </div>
                     <div class="form-group">
-                        <label for="numEdges">Number of Roads (Edges)</label>
-                        <input type="number" id="numEdges" value="7" required>
+                        <label for="simDuration">Simulation Duration (time steps)</label>
+                        <input type="number" id="simDuration" value="200" required>
                     </div>
                     <div class="form-group">
-                        <label for="edgesData">Roads Data (source destination weight)</label>
-                        <textarea id="edgesData" rows="8" placeholder="e.g.&#10;0 1 10&#10;0 2 3&#10;1 3 2&#10;...">0 1 10
-0 2 3
-1 3 2
-1 2 1
-2 3 8
-2 4 2
-3 4 5</textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="startNode">Start Node</label>
+                        <label for="startNode">Emergency Vehicle Start</label>
                         <input type="number" id="startNode" value="0" required>
                     </div>
                      <div class="form-group">
-                        <label for="emergencyNode">Emergency Vehicle Destination</label>
-                        <input type="number" id="emergencyNode" value="4" required>
+                        <label for="endNode">Emergency Vehicle Destination</label>
+                        <input type="number" id="endNode" value="5" required>
                     </div>
                     <button type="submit" id="runButton">Run Simulation</button>
                 </form>
             </div>
 
             <div class="panel" id="output-panel">
-                <h2>Simulation Log</h2>
+                 <div class="panel-header">
+                    <h2>Simulation Log</h2>
+                    <span>Real-time output from the C++ core</span>
+                </div>
                 <pre id="output-log">Simulation results will appear here...</pre>
             </div>
         </main>
     </div>
-    <script src="module.js"></script>
+    
+    <!-- This script must be before index.js -->
+    <script src="module.js"></script> 
     <script src="index.js"></script>
 </body>
 </html>
