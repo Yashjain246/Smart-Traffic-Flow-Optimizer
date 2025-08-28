@@ -4,24 +4,234 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Traffic Flow Optimizer</title>
-    <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --font-family: 'Poppins', sans-serif;
+            --text-primary: #f0f0f0;
+            --text-secondary: #a0a0a0;
+            --accent-primary: #00aaff;
+            --accent-hover: #0088cc;
+            --border-radius: 16px;
+            --panel-bg: rgba(30, 30, 40, 0.6);
+            --panel-border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: #0f0f1a;
+            color: var(--text-primary);
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .background-shapes {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .background-shapes::before, .background-shapes::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.5;
+        }
+
+        .background-shapes::before {
+            background: linear-gradient(90deg, #ff00ff, #00ffff);
+            width: 400px;
+            height: 400px;
+            top: 10%;
+            left: 15%;
+            animation: move-shape 15s infinite alternate;
+        }
+
+        .background-shapes::after {
+            background: linear-gradient(90deg, #ff9900, #ff00ff);
+            width: 300px;
+            height: 300px;
+            bottom: 10%;
+            right: 15%;
+            animation: move-shape 20s infinite alternate-reverse;
+        }
+
+        @keyframes move-shape {
+            from { transform: translate(0, 0) rotate(0deg); }
+            to { transform: translate(100px, 50px) rotate(180deg); }
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            animation: fade-in 1s ease-out;
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-top: 0.5rem;
+        }
+
+        main {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            border: var(--panel-border);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .panel:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        .panel-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .panel-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+
+        .panel-header span {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: all 0.2s ease-in-out;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(0, 170, 255, 0.25);
+        }
+
+        button {
+            width: 100%;
+            padding: 0.85rem;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fff;
+            background: var(--accent-primary);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            margin-top: 1rem;
+        }
+
+        button:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 170, 255, 0.3);
+        }
+
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        #output-log {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 1.5rem;
+            height: 450px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #c0c0c0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        @media (max-width: 900px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+            body {
+                padding: 1rem;
+                align-items: flex-start;
+            }
+        }
+    </style>
 </head>
 <body>
+    <div class="background-shapes"></div>
     <div class="container">
         <header>
-            <div class="logo">🚦</div>
             <h1>Smart Traffic Flow Optimizer</h1>
-            <p>A dynamic traffic management simulation using C++ and WebAssembly.</p>
+            <p>Dynamic traffic management powered by C++ and WebAssembly</p>
         </header>
 
         <main>
             <div class="panel" id="input-panel">
                 <div class="panel-header">
                     <h2>Configuration</h2>
-                    <span>Set simulation parameters</span>
+                    <span>Set simulation parameters below</span>
                 </div>
                 <form id="simulation-form">
                     <div class="form-group">
@@ -54,8 +264,106 @@
         </main>
     </div>
     
-    <!-- This script must be before index.js -->
     <script src="module.js"></script> 
-    <script src="index.js"></script>
+    <script>
+        // This Module object is the hook that Emscripten-generated code looks for.
+        // We are redirecting its standard output and error streams to our own function
+        // which will then write the simulation output to the webpage.
+        var Module = {
+            // When the C++ code calls `std::cout`, this function will be called.
+            print: (function() {
+                const outputLog = document.getElementById('output-log');
+                return function(text) {
+                    if (arguments.length > 1) {
+                        text = Array.prototype.slice.call(arguments).join(' ');
+                    }
+                    console.log(text);
+                    if (outputLog) {
+                        outputLog.textContent += text + "\n";
+                        // Auto-scroll to the bottom of the log
+                        outputLog.scrollTop = outputLog.scrollHeight;
+                    }
+                };
+            })(),
+            // When the C++ code calls `std::cerr`, this function will be called.
+            printErr: function(text) {
+                if (arguments.length > 1) {
+                    text = Array.prototype.slice.call(arguments).join(' ');
+                }
+                console.error(text);
+                const outputLog = document.getElementById('output-log');
+                if (outputLog) {
+                    outputLog.textContent += "[ERROR] " + text + "\n";
+                    outputLog.scrollTop = outputLog.scrollHeight;
+                }
+            },
+        };
+
+        // This is an event listener that Emscripten will call when the WebAssembly module is ready to use.
+        window.addEventListener('load', () => {
+            // The SmartTrafficModule function is created by the 'module.js' file generated by Emscripten.
+            // We pass our Module object to it to hook into its lifecycle.
+            if (typeof SmartTrafficModule === 'function') {
+                SmartTrafficModule(Module);
+            } else {
+                console.error("SmartTrafficModule is not defined. Did you compile with MODULARIZE=1 and include module.js?");
+            }
+        });
+
+        // --- Simulation Control ---
+
+        const form = document.getElementById('simulation-form');
+        const runButton = document.getElementById('runButton');
+
+        // Listen for the form submission event.
+        form.addEventListener('submit', (event) => {
+            event.preventDefault(); // Prevent the default form submission behavior
+            runSimulation();
+        });
+
+        function runSimulation() {
+            const outputLog = document.getElementById('output-log');
+            outputLog.textContent = 'Initializing simulation...\n\n';
+            
+            // Disable the button to prevent multiple runs
+            runButton.disabled = true;
+            runButton.textContent = 'Running...';
+
+            // Get the simulation parameters from the form inputs.
+            const numVehicles = document.getElementById('numVehicles').value;
+            const simDuration = document.getElementById('simDuration').value;
+            const startNode = document.getElementById('startNode').value;
+            const endNode = document.getElementById('endNode').value;
+
+            // These arguments will be passed as `argc` and `argv` to the main() function in your C++ code.
+            const args = [
+                numVehicles,
+                simDuration,
+                startNode,
+                endNode
+            ];
+
+            // We wrap this in a timeout to allow the UI to update with "Initializing..."
+            // before the potentially blocking WebAssembly code runs.
+            setTimeout(() => {
+                try {
+                    // This is the main call that executes your C++ code.
+                    if (Module.callMain) {
+                        Module.callMain(args);
+                    } else {
+                        Module.printErr("Module.callMain is not available. Did you export it?");
+                    }
+                } catch (e) {
+                    console.error(e);
+                    Module.printErr(e.toString());
+                } finally {
+                    // Re-enable the button after the simulation is finished or an error occurs.
+                    runButton.disabled = false;
+                    runButton.textContent = 'Run Simulation';
+                    Module.print("\n...Simulation finished.");
+                }
+            }, 50);
+        }
+    </script>
 </body>
 </html>
