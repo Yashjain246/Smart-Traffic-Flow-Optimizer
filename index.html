@@ -18,7 +18,7 @@
             --panel-bg: rgba(30, 30, 40, 0.6);
             --panel-border: 1px solid rgba(255, 255, 255, 0.15);
         }
-        body { font-family:var(--font-family); background:#0f0f1a; color:var(--text-primary); margin:0; padding:2rem; display:flex; justify-content:center; align-items:flex-start; min-height:100vh; overflow-x:hidden; }
+        body { font-family:var(--font-family); background:#0f0f1a; color:var(--text-primary); margin:0; padding:2rem; display:flex; justify-content:center; align-items:flex-start; min-height:100vh; }
         .background-shapes { position:fixed; top:0; left:0; width:100%; height:100%; z-index:-1; overflow: hidden; }
         .background-shapes::before, .background-shapes::after { content:''; position:absolute; border-radius:50%; filter:blur(100px); opacity:0.5; }
         .background-shapes::before { background:linear-gradient(90deg, #ff00ff, #00ffff); width:400px; height:400px; top:10%; left:15%; animation:move-shape 15s infinite alternate; }
